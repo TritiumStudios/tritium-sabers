@@ -1,6 +1,37 @@
 {
   "expo": {
-    "scheme": "acme",
-    "web": { "bundler": "metro" }
+    "scheme": "light-companion",
+    "plugins": [
+      "./ble-manager-plugin"
+    ],
+    "name": "Light Companion",
+    "slug": "light-companion",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "owner": "tritiumstudios",
+    "android": {
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_ADVERTISE"
+      ],
+      "package": "com.tritiumstudios.lightcompanion"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b9eb6294-6776-4347-aa73-822c941c18fd"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.tritiumstudios.lightcompanion"
+    }
   }
 }
