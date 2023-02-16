@@ -118,7 +118,19 @@ const App = () => {
             "Open settings and enable Bluetooth"
           );
           if (res) {
-            Linking.openURL("App-Prefs:Bluetooth");
+            Platform.OS === "ios"
+              ? Linking.openURL("App-Prefs:Bluetooth")
+              : Linking.sendIntent("android.settings.BLUETOOTH_SETTINGS");
+          }
+        } else {
+          let res = await AsyncAlertWithCancel(
+            "Bluetooth Issue",
+            "Open settings and enable Bluetooth"
+          );
+          if (res) {
+            Platform.OS === "ios"
+              ? Linking.openURL("App-Prefs:Bluetooth")
+              : Linking.sendIntent("android.settings.BLUETOOTH_SETTINGS");
           }
         }
       }
@@ -377,12 +389,16 @@ const App = () => {
               </Text>
               <TouchableOpacity
                 style={styles.blueBtn}
-                onPress={() => Linking.openURL("App-Prefs:Bluetooth")}
+                onPress={() =>
+                  Platform.OS === "ios"
+                    ? Linking.openURL("App-Prefs:Bluetooth")
+                    : Linking.sendIntent("android.settings.BLUETOOTH_SETTINGS")
+                }
               >
                 <Text style={styles.textLight}>Go to settings</Text>
               </TouchableOpacity>
             </View>
-          ) : bleState === "off" ? (
+          ) : bleState === "unauthorized" ? (
             <View
               style={{
                 flex: 1,
@@ -406,7 +422,10 @@ const App = () => {
                 alignItems: "center",
               }}
             >
-              <Text style={styles.textDark}>Bluetooth Problem</Text>
+              <Text style={styles.textDark}>Bluetooth Issue</Text>
+              <Text style={styles.textDark}>
+                Check your settings or restart your phone
+              </Text>
               <TouchableOpacity
                 style={styles.blueBtn}
                 onPress={() => Linking.openSettings()}
