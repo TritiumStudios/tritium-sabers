@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   Switch,
   Linking,
+  AppState,
 } from "react-native";
 import { Link, usePathname } from "expo-router";
 import { RefreshControl } from "react-native-gesture-handler";
@@ -49,6 +50,9 @@ const App = () => {
   }, [fontsLoaded]);
 
   if (Platform.OS !== "web") {
+    const appState = useRef(AppState.currentState);
+    const [appStateVisible, setAppStateVisible] = useState(appState.current);
+
     const [isScanning, setIsScanning] = useState(false);
     const [peripherals, setPeripherals] = useState(new Map());
 
@@ -60,11 +64,16 @@ const App = () => {
       console.log("peripherals", peripherals.entries());
     }, [peripherals]);
 
+    useEffect(() => {
+      disconnectPeripherals();
+    }, [appStateVisible]);
+
     const updatePeripherals = (key, value) => {
       setPeripherals(new Map(peripherals.set(key, value)));
     };
 
     const startScan = () => {
+      disconnectPeripherals();
       setPeripherals([]);
       if (!isScanning) {
         try {
@@ -152,14 +161,6 @@ const App = () => {
       updatePeripherals(peripheral.id, peripheral);
     };
 
-    // const togglePeripheralConnection = async (peripheral) => {
-    //   if (peripheral && peripheral.connected) {
-    //     BleManager.disconnect(peripheral.id);
-    //   } else {
-    //     connectPeripheral(peripheral);
-    //   }
-    // };
-
     const togglePower = async (peripheral) => {
       peripheral.updating = true;
       updatePeripherals(peripheral.id, peripheral);
@@ -228,6 +229,17 @@ const App = () => {
       }
     };
 
+    async function disconnectPeripherals() {
+      const connectedPeripherals = await BleManager.getConnectedPeripherals(
+        SERVICE_UUIDS
+      );
+      if (connectedPeripherals) {
+        connectedPeripherals.forEach((connectedPeripheral) => {
+          BleManager.disconnect(connectedPeripheral.id);
+        });
+      }
+    }
+
     useEffect(() => {
       BleManager.start({ showAlert: false });
       const listeners = [
@@ -261,16 +273,20 @@ const App = () => {
     }, []);
 
     useEffect(() => {
-      async function disconnectPeripherals() {
-        const connectedPeripherals = await BleManager.getConnectedPeripherals(
-          SERVICE_UUIDS
-        );
-        if (connectedPeripherals) {
-          connectedPeripherals.forEach((connectedPeripheral) => {
-            BleManager.disconnect(connectedPeripheral.id);
-          });
+      const subscription = AppState.addEventListener(
+        "change",
+        (nextAppState) => {
+          appState.current = nextAppState;
+          setAppStateVisible(appState.current);
         }
-      }
+      );
+
+      return () => {
+        subscription.remove();
+      };
+    }, []);
+
+    useEffect(() => {
       if (pathname === "/") {
         disconnectPeripherals();
       }
