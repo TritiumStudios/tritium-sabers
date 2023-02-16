@@ -23,6 +23,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts, Comfortaa_500Medium } from "@expo-google-fonts/comfortaa";
 
 import BleManager from "react-native-ble-manager";
+import { bytesToHex, hexToBytes } from "./ble";
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -49,7 +50,9 @@ const App = () => {
 
     const pathname = usePathname();
 
-    // console.log({ peripherals: peripherals.entries() });
+    useEffect(() => {
+      console.log("peripherals", peripherals.entries());
+    }, [peripherals]);
 
     const updatePeripherals = (key, value) => {
       setPeripherals(new Map(peripherals.set(key, value)));
@@ -82,20 +85,28 @@ const App = () => {
       console.log("Disconnected from " + data.peripheral);
     };
 
-    // const handleUpdateValueForCharacteristic = (data) => {
-    //   console.log(
-    //     "Received data from " +
-    //       data.peripheral +
-    //       " characteristic " +
-    //       data.characteristic,
-    //     data.value
-    //   );
-    // };
+    const handleUpdateValueForCharacteristic = (data) => {
+      console.log(
+        "Received data from " +
+          data.peripheral +
+          " characteristic " +
+          data.characteristic,
+        data.value
+      );
+    };
 
     const handleDiscoverPeripheral = (peripheral) => {
-      // console.log("Got ble peripheral", peripheral);
+      console.log(
+        "Got ble peripheral",
+        peripheral.advertising.manufacturerData.bytes
+      );
       if (!peripheral.name) {
         peripheral.name = "NO NAME";
+      }
+      if (peripheral.advertising?.manufacturerData?.bytes[0] === 0) {
+        peripheral.power = false;
+      } else {
+        peripheral.power = true;
       }
       updatePeripherals(peripheral.id, peripheral);
     };
@@ -107,6 +118,58 @@ const App = () => {
     //     connectPeripheral(peripheral);
     //   }
     // };
+
+    const togglePower = async (peripheral) => {
+      peripheral.updating = true;
+      updatePeripherals(peripheral.id, peripheral);
+
+      await connectPeripheral(peripheral);
+      let services = await BleManager.retrieveServices(peripheral.id);
+
+      var initialPower = await BleManager.read(
+        peripheral.id,
+        Platform.OS === "ios"
+          ? services?.services[0]
+          : services?.services[2].uuid,
+        Platform.OS === "ios"
+          ? services?.characteristics[1]?.characteristic
+          : services?.characteristics[5]?.characteristic
+      );
+
+      initialPower = bytesToHex(initialPower);
+      console.log("initialPower hex", initialPower);
+      let power = "00";
+      if (initialPower === "00") {
+        power = "01";
+      }
+      let bytes = hexToBytes(power);
+      console.log("power", power, bytes);
+      try {
+        await BleManager.write(
+          peripheral.id,
+          Platform.OS === "ios"
+            ? services?.services[0]
+            : services?.services[2].uuid,
+          Platform.OS === "ios"
+            ? services?.characteristics[1]?.characteristic
+            : services?.characteristics[5]?.characteristic,
+          bytes
+        );
+        console.log("Wrote `" + bytes + "`");
+      } catch (error) {
+        console.log(error);
+      }
+
+      peripheral.updating = false;
+      if (power === "00") {
+        peripheral.power = false;
+      } else {
+        peripheral.power = true;
+      }
+      updatePeripherals(peripheral.id, peripheral);
+
+      BleManager.disconnect(peripheral.id);
+    };
 
     const connectPeripheral = async (peripheral) => {
       try {
@@ -136,10 +199,10 @@ const App = () => {
           "BleManagerDisconnectPeripheral",
           handleDisconnectedPeripheral
         ),
-        // bleManagerEmitter.addListener(
-        //   "BleManagerDidUpdateValueForCharacteristic",
-        //   handleUpdateValueForCharacteristic
-        // ),
+        bleManagerEmitter.addListener(
+          "BleManagerDidUpdateValueForCharacteristic",
+          handleUpdateValueForCharacteristic
+        ),
       ];
 
       handleAndroidPermissionCheck();
@@ -157,7 +220,6 @@ const App = () => {
         const connectedPeripherals = await BleManager.getConnectedPeripherals(
           SERVICE_UUIDS
         );
-        console.log(connectedPeripherals);
         if (connectedPeripherals) {
           connectedPeripherals.forEach((connectedPeripheral) => {
             BleManager.disconnect(connectedPeripheral.id);
@@ -192,7 +254,7 @@ const App = () => {
     };
 
     const renderItem = ({ item }) => {
-      const backgroundColor = item.connected ? "#069400" : "#fff";
+      console.log("power", item.power);
       return (
         <Link
           href={{
@@ -202,13 +264,31 @@ const App = () => {
           asChild
         >
           <TouchableOpacity>
-            <View style={[styles.row, { backgroundColor }]}>
-              <Text style={styles.peripheralName}>
-                {item.name} {item.connecting && "Connecting..."}
-              </Text>
-              <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
-              <Text style={styles.peripheralId}>{item.id}</Text>
-              {/* <Switch value={item.on} /> */}
+            <View style={[styles.row]}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <View style={{ flex: 1 }}></View>
+                <View style={{ flex: 5 }}>
+                  <Text style={styles.peripheralName}>{item.name}</Text>
+                  <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
+                  <Text style={styles.peripheralId}>{item.id}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  {item.updating ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <Switch
+                      value={item.power}
+                      onChange={() => togglePower(item)}
+                    />
+                  )}
+                </View>
+              </View>
             </View>
           </TouchableOpacity>
         </Link>
@@ -229,7 +309,7 @@ const App = () => {
             </Text>
           </Pressable>
 
-          {Array.from(peripherals.values()).length == 0 && (
+          {!isScanning && Array.from(peripherals.values()).length == 0 && (
             <View style={styles.row}>
               <Text style={styles.noPeripherals}>No devices found</Text>
             </View>
@@ -241,7 +321,9 @@ const App = () => {
             refreshControl={
               <RefreshControl
                 refreshing={isScanning}
-                onRefresh={() => startScan()}
+                onRefresh={() => {
+                  startScan();
+                }}
               />
             }
           />
@@ -340,7 +422,7 @@ const styles = StyleSheet.create({
   },
   peripheralId: {
     // fontFamily: "Comfortaa_500Medium",
-    fontSize: 12,
+    fontSize: 8,
     textAlign: "center",
     padding: 2,
     paddingBottom: 20,

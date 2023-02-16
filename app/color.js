@@ -7,6 +7,7 @@ import {
   NativeModules,
   NativeEventEmitter,
   StyleSheet,
+  Switch,
 } from "react-native";
 import { Link, useNavigation, useSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -15,31 +16,13 @@ import ColorPicker from "react-native-wheel-color-picker";
 import { HexColorPicker } from "react-colorful";
 
 import BleManager from "react-native-ble-manager";
+import { bytesToHex, hexToBytes } from "./ble";
 
 const SERVICE_UUID = "0000004a-0000-1000-8000-00805f9b34fb";
 const CHARACTERISTIC_UUID = "00004a01-0000-1000-8000-00805f9b34fb";
 
 const SERVICE_INDEX = Platform.OS === "ios" ? 0 : 2;
 const CHARACTERISTIC_INDEX = Platform.OS === "ios" ? 0 : 4;
-
-// Convert a hex string to a byte array
-function hexToBytes(hex) {
-  let bytes = [];
-  for (let c = 0; c < hex.length; c += 2)
-    bytes.push(parseInt(hex.substr(c, 2), 16));
-  return bytes;
-}
-
-// Convert a byte array to a hex string
-function bytesToHex(bytes) {
-  let hex = [];
-  for (let i = 0; i < bytes.length; i++) {
-    let current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
-    hex.push((current >>> 4).toString(16));
-    hex.push((current & 0xf).toString(16));
-  }
-  return hex.join("");
-}
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -63,6 +46,7 @@ export default function Modal() {
 
   const [color, setColor] = useState("#ffffff");
   const [prevColor, setPrevColor] = useState("#ffffff");
+  const [power, setPower] = useState(peripheral.power);
 
   useEffect(() => {
     // console.log(peripheral);
@@ -126,6 +110,34 @@ export default function Modal() {
     }
   };
 
+  const sendPower = async (val) => {
+    if (services == null) {
+      console.log("Device services not available");
+      return;
+    }
+    console.log("val");
+    let data = "00";
+    if (val) {
+      data = "01";
+    }
+    const bytes = hexToBytes(data);
+    try {
+      await BleManager.write(
+        peripheral.id,
+        Platform.OS === "ios"
+          ? services?.services[0]
+          : services?.services[2].uuid,
+        Platform.OS === "ios"
+          ? services?.characteristics[1]?.characteristic
+          : services?.characteristics[5]?.characteristic,
+        bytes
+      );
+      console.log("Wrote `" + bytes + "`");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     if (!ready) {
       setTimeout(() => {
@@ -144,6 +156,10 @@ export default function Modal() {
     }
     setPrevColor(color);
   }, [color, ready]);
+
+  useEffect(() => {
+    sendPower(power);
+  }, [power]);
 
   const handleDisconnectedPeripheral = (data) => {
     console.log(data);
@@ -184,6 +200,21 @@ export default function Modal() {
               row={false}
             />
           )}
+          <Text
+            style={[
+              styles.textDark,
+              { top: 30, right: 70, position: "absolute" },
+            ]}
+          >
+            Power
+          </Text>
+          <Switch
+            value={power}
+            onChange={(val) => {
+              setPower((previousState) => !previousState);
+            }}
+            style={{ top: 25, right: 10, position: "absolute" }}
+          />
         </View>
       ) : connecting ? (
         <View>
@@ -244,5 +275,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 30,
     borderRadius: 5,
+    ...boxShadow,
   },
 });
