@@ -29,6 +29,8 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 let services = null;
 
+var timeout;
+
 export default function Modal() {
   const navigation = useNavigation();
   const params = useSearchParams();
@@ -53,12 +55,25 @@ export default function Modal() {
     connectPeripheral(peripheral);
   }, [peripheral]);
 
+  const startTimeout = () => {
+    timeout = setTimeout(() => {
+      setConnecting(false);
+      setConnected(false);
+    }, 5000);
+  };
+
+  const stopTimeout = () => {
+    clearTimeout(timeout);
+  };
+
   const connectPeripheral = async (peripheral) => {
+    startTimeout();
     try {
       if (peripheral) {
         setConnecting(true);
         try {
           await BleManager.connect(peripheral.id);
+          stopTimeout();
           services = await BleManager.retrieveServices(peripheral.id);
           var initialColor = await BleManager.read(
             peripheral.id,
