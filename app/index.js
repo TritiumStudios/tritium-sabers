@@ -61,10 +61,6 @@ const App = () => {
     const pathname = usePathname();
 
     useEffect(() => {
-      console.log("peripherals", peripherals.entries());
-    }, [peripherals]);
-
-    useEffect(() => {
       disconnectPeripherals();
     }, [appStateVisible]);
 
@@ -158,6 +154,15 @@ const App = () => {
       } else {
         peripheral.power = true;
       }
+      let red = peripheral.advertising?.manufacturerData?.bytes[1];
+      let green = peripheral.advertising?.manufacturerData?.bytes[2];
+      let blue = peripheral.advertising?.manufacturerData?.bytes[3];
+      let color =
+        "#" +
+        red.toString(16).padStart(2, "0") +
+        green.toString(16).padStart(2, "0") +
+        blue.toString(16).padStart(2, "0");
+      peripheral.color = color;
       updatePeripherals(peripheral.id, peripheral);
     };
 
@@ -287,8 +292,11 @@ const App = () => {
     }, []);
 
     useEffect(() => {
+      console.log(pathname);
       if (pathname === "/") {
-        disconnectPeripherals();
+        startScan();
+      } else {
+        setPeripherals([]);
       }
     }, [pathname]);
 
@@ -315,7 +323,6 @@ const App = () => {
     };
 
     const renderItem = ({ item }) => {
-      console.log("power", item.power);
       return (
         <Link
           href={{
@@ -333,8 +340,17 @@ const App = () => {
                   alignItems: "center",
                 }}
               >
-                <View style={{ flex: 1 }}></View>
-                <View style={{ flex: 5 }}>
+                <View style={{ flex: 1, alignItems: "flex-end" }}>
+                  <View
+                    style={{
+                      backgroundColor: item.color,
+                      height: 30,
+                      width: 30,
+                      borderRadius: 5,
+                    }}
+                  />
+                </View>
+                <View style={{ flex: 4 }}>
                   <Text style={styles.peripheralName}>{item.name}</Text>
                   <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
                   <Text style={styles.peripheralId}>{item.id}</Text>
