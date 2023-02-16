@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Switch,
+  Linking,
 } from "react-native";
 import { Link, usePathname } from "expo-router";
 import { RefreshControl } from "react-native-gesture-handler";
@@ -23,7 +24,10 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts, Comfortaa_500Medium } from "@expo-google-fonts/comfortaa";
 
 import BleManager from "react-native-ble-manager";
+
 import { bytesToHex, hexToBytes } from "./ble";
+import { AsyncAlertWithCancel } from "./util";
+
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -47,6 +51,8 @@ const App = () => {
   if (Platform.OS !== "web") {
     const [isScanning, setIsScanning] = useState(false);
     const [peripherals, setPeripherals] = useState(new Map());
+
+    const [bleState, setBleState] = useState("on");
 
     const pathname = usePathname();
 
@@ -93,6 +99,29 @@ const App = () => {
           data.characteristic,
         data.value
       );
+    };
+
+    const handleBleManagerDidUpdateState = async (data) => {
+      setBleState(data?.state);
+      if (data?.state != "on") {
+        if (data?.state === "unauthorized") {
+          let res = await AsyncAlertWithCancel(
+            "Bluetooth Unauthorized",
+            "Open settings and allow Bluetooth access"
+          );
+          if (res) {
+            Linking.openSettings();
+          }
+        } else if (data?.state === "off") {
+          let res = await AsyncAlertWithCancel(
+            "Bluetooth Disabled",
+            "Open settings and enable Bluetooth"
+          );
+          if (res) {
+            Linking.openURL("App-Prefs:Bluetooth");
+          }
+        }
+      }
     };
 
     const handleDiscoverPeripheral = (peripheral) => {
@@ -203,6 +232,10 @@ const App = () => {
           "BleManagerDidUpdateValueForCharacteristic",
           handleUpdateValueForCharacteristic
         ),
+        bleManagerEmitter.addListener(
+          "BleManagerDidUpdateState",
+          handleBleManagerDidUpdateState
+        ),
       ];
 
       handleAndroidPermissionCheck();
@@ -299,34 +332,89 @@ const App = () => {
       <>
         <StatusBar />
         <SafeAreaView style={styles.body}>
-          <Pressable
-            style={styles.scanButton}
-            onPress={startScan}
-            disabled={isScanning}
-          >
-            <Text style={styles.scanButtonText}>
-              {isScanning ? "Scanning..." : "Scan"}
-            </Text>
-          </Pressable>
+          {bleState == "on" ? (
+            <>
+              <Pressable
+                style={styles.scanButton}
+                onPress={startScan}
+                disabled={isScanning}
+              >
+                <Text style={styles.scanButtonText}>
+                  {isScanning ? "Scanning..." : "Scan"}
+                </Text>
+              </Pressable>
 
-          {!isScanning && Array.from(peripherals.values()).length == 0 && (
-            <View style={styles.row}>
-              <Text style={styles.noPeripherals}>No devices found</Text>
+              {!isScanning && Array.from(peripherals.values()).length == 0 && (
+                <View style={styles.row}>
+                  <Text style={styles.noPeripherals}>No devices found</Text>
+                </View>
+              )}
+              <FlatList
+                data={Array.from(peripherals.values())}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.id}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={isScanning}
+                    onRefresh={() => {
+                      startScan();
+                    }}
+                  />
+                }
+              />
+            </>
+          ) : bleState === "off" ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={styles.textDark}>Bluetooth Disabled</Text>
+              <Text style={styles.textDark}>
+                Check your control center settings
+              </Text>
+              <TouchableOpacity
+                style={styles.blueBtn}
+                onPress={() => Linking.openURL("App-Prefs:Bluetooth")}
+              >
+                <Text style={styles.textLight}>Go to settings</Text>
+              </TouchableOpacity>
+            </View>
+          ) : bleState === "off" ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={styles.textDark}>Bluetooth Unauthorized</Text>
+              <TouchableOpacity
+                style={styles.blueBtn}
+                onPress={() => Linking.openSettings()}
+              >
+                <Text style={styles.textLight}>Go to settings</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={styles.textDark}>Bluetooth Problem</Text>
+              <TouchableOpacity
+                style={styles.blueBtn}
+                onPress={() => Linking.openSettings()}
+              >
+                <Text style={styles.textLight}>Go to settings</Text>
+              </TouchableOpacity>
             </View>
           )}
-          <FlatList
-            data={Array.from(peripherals.values())}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            refreshControl={
-              <RefreshControl
-                refreshing={isScanning}
-                onRefresh={() => {
-                  startScan();
-                }}
-              />
-            }
-          />
         </SafeAreaView>
       </>
     );
@@ -379,23 +467,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     flex: 1,
   },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    // fontFamily: "Comfortaa_500Medium",
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#000",
-  },
-  sectionDescription: {
-    marginTop: 8,
-    // fontFamily: "Comfortaa_500Medium",
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#000",
-  },
   highlight: {
     fontWeight: "700",
   },
@@ -438,6 +509,24 @@ const styles = StyleSheet.create({
     margin: 10,
     textAlign: "center",
     color: "#777",
+  },
+  textLight: {
+    // fontFamily: "Comfortaa_500Medium",
+    fontSize: 16,
+    color: "#fff",
+  },
+  textDark: {
+    // fontFamily: "Comfortaa_500Medium",
+    fontSize: 16,
+    color: "#000",
+  },
+  blueBtn: {
+    backgroundColor: "blue",
+    marginVertical: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+    ...boxShadow,
   },
 });
 
