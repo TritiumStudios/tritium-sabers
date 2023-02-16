@@ -13,6 +13,9 @@ export default function Layout() {
         name="color"
         options={{
           headerTitle: "Set Color",
+          // headerTitleStyle: {
+          //   fontFamily: "Comfortaa_500Medium",
+          // },
           // headerShown: false,
         }}
       />

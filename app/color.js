@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   NativeModules,
   NativeEventEmitter,
+  StyleSheet,
 } from "react-native";
 import { Link, useNavigation, useSearchParams } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 
 import ColorPicker from "react-native-wheel-color-picker";
@@ -130,7 +130,7 @@ export default function Modal() {
     if (!ready) {
       setTimeout(() => {
         setReady(true);
-      }, 10);
+      }, 20);
     }
   }, [ready]);
 
@@ -169,14 +169,7 @@ export default function Modal() {
   }, []);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 25,
-      }}
-    >
+    <View style={styles.body}>
       {connected ? (
         <View>
           {Platform.OS === "web" ? (
@@ -204,31 +197,52 @@ export default function Modal() {
             alignItems: "center",
           }}
         >
-          <Text>Not Connected</Text>
+          <Text style={styles.textDark}>Not Connected</Text>
           <TouchableOpacity
-            style={{
-              backgroundColor: "blue",
-              marginVertical: 20,
-              paddingVertical: 10,
-              paddingHorizontal: 30,
-              borderRadius: 5,
-            }}
+            style={styles.tryAgainBtn}
             onPress={() => connectPeripheral(peripheral)}
           >
-            <Text style={{ color: "#fff" }}>Try Again</Text>
+            <Text style={styles.textLight}>Try Again</Text>
           </TouchableOpacity>
         </View>
       )}
-
-      {/* <Link
-        asChild
-        href="../"
-        style={{ top: 40, left: 20, position: "absolute" }}
-      >
-        <TouchableOpacity>
-          <Text style={{ color: "blue" }}>Go Back</Text>
-        </TouchableOpacity>
-      </Link> */}
     </View>
   );
 }
+
+const boxShadow = {
+  shadowColor: "#000",
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+};
+
+const styles = StyleSheet.create({
+  body: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 25,
+  },
+  textLight: {
+    // fontFamily: "Comfortaa_500Medium",
+    fontSize: 16,
+    color: "#fff",
+  },
+  textDark: {
+    // fontFamily: "Comfortaa_500Medium",
+    fontSize: 16,
+    color: "#000",
+  },
+  tryAgainBtn: {
+    backgroundColor: "blue",
+    marginVertical: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+  },
+});

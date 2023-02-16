@@ -14,6 +14,7 @@ import {
   Pressable,
   TouchableOpacity,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 import { Link, usePathname } from "expo-router";
 import { RefreshControl } from "react-native-gesture-handler";
@@ -29,22 +30,18 @@ const SECONDS_TO_SCAN_FOR = 3;
 const SERVICE_UUIDS = ["0000004a-0000-1000-8000-00805f9b34fb"];
 const ALLOW_DUPLICATES = false;
 
-// SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync();
 
 const App = () => {
-  // const [fontsLoaded] = useFonts({
-  //   Comfortaa_500Medium,
-  // });
+  const [fontsLoaded] = useFonts({
+    Comfortaa_500Medium,
+  });
 
-  // useEffect(() => {
-  //   if (fontsLoaded) {
-  //     SplashScreen.hideAsync();
-  //   }
-  // }, [fontsLoaded]);
-
-  // if (!fontsLoaded) {
-  //   return null;
-  // }
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
 
   if (Platform.OS !== "web") {
     const [isScanning, setIsScanning] = useState(false);
@@ -211,6 +208,7 @@ const App = () => {
               </Text>
               <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
               <Text style={styles.peripheralId}>{item.id}</Text>
+              {/* <Switch value={item.on} /> */}
             </View>
           </TouchableOpacity>
         </Link>
@@ -290,6 +288,7 @@ const styles = StyleSheet.create({
     ...boxShadow,
   },
   scanButtonText: {
+    // fontFamily: "Comfortaa_500Medium",
     fontSize: 20,
     letterSpacing: 0.25,
     color: "#fff",
@@ -303,12 +302,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   sectionTitle: {
+    // fontFamily: "Comfortaa_500Medium",
     fontSize: 24,
     fontWeight: "600",
     color: "#000",
   },
   sectionDescription: {
     marginTop: 8,
+    // fontFamily: "Comfortaa_500Medium",
     fontSize: 18,
     fontWeight: "400",
     color: "#000",
@@ -318,6 +319,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     color: "#000",
+    // fontFamily: "Comfortaa_500Medium",
     fontSize: 12,
     fontWeight: "600",
     padding: 4,
@@ -331,11 +333,13 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   rssi: {
+    // fontFamily: "Comfortaa_500Medium",
     fontSize: 12,
     textAlign: "center",
     padding: 2,
   },
   peripheralId: {
+    // fontFamily: "Comfortaa_500Medium",
     fontSize: 12,
     textAlign: "center",
     padding: 2,
