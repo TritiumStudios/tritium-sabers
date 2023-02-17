@@ -36,6 +36,8 @@ const SECONDS_TO_SCAN_FOR = 3;
 const SERVICE_UUIDS = ["0000004a-0000-1000-8000-00805f9b34fb"];
 const ALLOW_DUPLICATES = false;
 
+var timeout;
+
 SplashScreen.preventAutoHideAsync();
 
 const App = () => {
@@ -62,23 +64,47 @@ const App = () => {
 
     useEffect(() => {
       disconnectPeripherals();
+      if (appStateVisible === "active") {
+        startScan();
+      }
     }, [appStateVisible]);
 
     const updatePeripherals = (key, value) => {
       setPeripherals(new Map(peripherals.set(key, value)));
     };
 
+    const startTimeout = () => {
+      timeout = setTimeout(() => {
+        stopScan();
+        setIsScanning(false);
+      }, 7000);
+    };
+
+    const stopTimeout = () => {
+      clearTimeout(timeout);
+    };
+
     const startScan = () => {
+      setIsScanning(true);
+      startTimeout();
       disconnectPeripherals();
-      setPeripherals([]);
+      setPeripherals(new Map());
       if (!isScanning) {
         try {
           console.log("Scanning...");
-          setIsScanning(true);
           BleManager.scan(SERVICE_UUIDS, SECONDS_TO_SCAN_FOR, ALLOW_DUPLICATES);
+          stopTimeout();
         } catch (error) {
           console.error(error);
         }
+      }
+    };
+
+    const stopScan = () => {
+      try {
+        BleManager.stopScan();
+      } catch (error) {
+        console.log(error);
       }
     };
 
@@ -94,16 +120,6 @@ const App = () => {
         updatePeripherals(peripheral.id, peripheral);
       }
       console.log("Disconnected from " + data.peripheral);
-    };
-
-    const handleUpdateValueForCharacteristic = (data) => {
-      console.log(
-        "Received data from " +
-          data.peripheral +
-          " characteristic " +
-          data.characteristic,
-        data.value
-      );
     };
 
     const handleBleManagerDidUpdateState = async (data) => {
@@ -166,31 +182,18 @@ const App = () => {
       updatePeripherals(peripheral.id, peripheral);
     };
 
-    const togglePower = async (peripheral) => {
+    const togglePower = async (peripheral, power) => {
       peripheral.updating = true;
       updatePeripherals(peripheral.id, peripheral);
 
       await connectPeripheral(peripheral);
       let services = await BleManager.retrieveServices(peripheral.id);
 
-      var initialPower = await BleManager.read(
-        peripheral.id,
-        Platform.OS === "ios"
-          ? services?.services[0]
-          : services?.services[2].uuid,
-        Platform.OS === "ios"
-          ? services?.characteristics[1]?.characteristic
-          : services?.characteristics[5]?.characteristic
-      );
-
-      initialPower = bytesToHex(initialPower);
-      console.log("initialPower hex", initialPower);
-      let power = "00";
-      if (initialPower === "00") {
-        power = "01";
+      let data = "00";
+      if (power) {
+        data = "01";
       }
-      let bytes = hexToBytes(power);
-      console.log("power", power, bytes);
+      let bytes = hexToBytes(data);
       try {
         await BleManager.write(
           peripheral.id,
@@ -202,17 +205,18 @@ const App = () => {
             : services?.characteristics[5]?.characteristic,
           bytes
         );
-        console.log("Wrote `" + bytes + "`");
+
+        if (power) {
+          peripheral.power = true;
+        } else {
+          peripheral.power = false;
+        }
+        console.log("Power", power);
       } catch (error) {
         console.log(error);
       }
 
       peripheral.updating = false;
-      if (power === "00") {
-        peripheral.power = false;
-      } else {
-        peripheral.power = true;
-      }
       updatePeripherals(peripheral.id, peripheral);
 
       BleManager.disconnect(peripheral.id);
@@ -235,13 +239,21 @@ const App = () => {
     };
 
     async function disconnectPeripherals() {
-      const connectedPeripherals = await BleManager.getConnectedPeripherals(
-        SERVICE_UUIDS
-      );
-      if (connectedPeripherals) {
-        connectedPeripherals.forEach((connectedPeripheral) => {
-          BleManager.disconnect(connectedPeripheral.id);
-        });
+      try {
+        const connectedPeripherals = await BleManager.getConnectedPeripherals(
+          SERVICE_UUIDS
+        );
+        if (connectedPeripherals) {
+          try {
+            connectedPeripherals.forEach((connectedPeripheral) => {
+              BleManager.disconnect(connectedPeripheral.id);
+            });
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      } catch (error) {
+        console.log(error);
       }
     }
 
@@ -256,10 +268,6 @@ const App = () => {
         bleManagerEmitter.addListener(
           "BleManagerDisconnectPeripheral",
           handleDisconnectedPeripheral
-        ),
-        bleManagerEmitter.addListener(
-          "BleManagerDidUpdateValueForCharacteristic",
-          handleUpdateValueForCharacteristic
         ),
         bleManagerEmitter.addListener(
           "BleManagerDidUpdateState",
@@ -292,11 +300,14 @@ const App = () => {
     }, []);
 
     useEffect(() => {
-      console.log(pathname);
       if (pathname === "/") {
-        startScan();
+        setIsScanning(true);
+        setTimeout(() => {
+          startScan();
+        }, 100);
       } else {
-        setPeripherals([]);
+        setPeripherals(new Map());
+        stopScan();
       }
     }, [pathname]);
 
@@ -361,7 +372,7 @@ const App = () => {
                   ) : (
                     <Switch
                       value={item.power}
-                      onChange={() => togglePower(item)}
+                      onValueChange={(val) => togglePower(item, val)}
                     />
                   )}
                 </View>

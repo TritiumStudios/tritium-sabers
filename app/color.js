@@ -8,8 +8,9 @@ import {
   NativeEventEmitter,
   StyleSheet,
   Switch,
+  Alert,
 } from "react-native";
-import { Link, useNavigation, useSearchParams } from "expo-router";
+import { useNavigation, useSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 
 import ColorPicker from "react-native-wheel-color-picker";
@@ -17,12 +18,6 @@ import { HexColorPicker } from "react-colorful";
 
 import BleManager from "react-native-ble-manager";
 import { bytesToHex, hexToBytes } from "./ble";
-
-const SERVICE_UUID = "0000004a-0000-1000-8000-00805f9b34fb";
-const CHARACTERISTIC_UUID = "00004a01-0000-1000-8000-00805f9b34fb";
-
-const SERVICE_INDEX = Platform.OS === "ios" ? 0 : 2;
-const CHARACTERISTIC_INDEX = Platform.OS === "ios" ? 0 : 4;
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -46,14 +41,22 @@ export default function Modal() {
 
   const [ready, setReady] = useState(true);
 
-  const [color, setColor] = useState("#ffffff");
-  const [prevColor, setPrevColor] = useState("#ffffff");
+  const [color, setColor] = useState(peripheral.color);
+  const [prevColor, setPrevColor] = useState(peripheral.color);
   const [power, setPower] = useState(peripheral.power);
 
+  const [bleError, setBleError] = useState(null);
+
   useEffect(() => {
-    // console.log(peripheral);
     connectPeripheral(peripheral);
   }, [peripheral]);
+
+  useEffect(() => {
+    if (bleError != null) {
+      Alert.alert("Error", bleError);
+      navigation.goBack();
+    }
+  }, [bleError]);
 
   const startTimeout = () => {
     timeout = setTimeout(() => {
@@ -75,18 +78,6 @@ export default function Modal() {
           await BleManager.connect(peripheral.id);
           stopTimeout();
           services = await BleManager.retrieveServices(peripheral.id);
-          var initialColor = await BleManager.read(
-            peripheral.id,
-            Platform.OS === "ios"
-              ? services?.services[0]
-              : services?.services[2].uuid,
-            Platform.OS === "ios"
-              ? services?.characteristics[0]?.characteristic
-              : services?.characteristics[4]?.characteristic
-          );
-          initialColor = "#" + bytesToHex(initialColor);
-          setPrevColor(initialColor);
-          setColor(initialColor);
           setConnected(true);
           setConnecting(false);
           console.log(`Connected to ${peripheral.id}`);
@@ -104,6 +95,7 @@ export default function Modal() {
   const sendColor = async (val) => {
     if (services == null) {
       console.log("Device services not available");
+      setBleError("Lost connection to the device...");
       return;
     }
     const data = val.split("#")[1];
@@ -119,7 +111,9 @@ export default function Modal() {
           : services?.characteristics[4]?.characteristic,
         bytes
       );
-      // console.log("Wrote `" + bytes + "`");
+      setPower(true);
+      console.log("Color", val);
+      console.log("Power true");
     } catch (error) {
       console.log(error);
     }
@@ -128,9 +122,9 @@ export default function Modal() {
   const sendPower = async (val) => {
     if (services == null) {
       console.log("Device services not available");
+      setPower(!val);
       return;
     }
-    console.log("val");
     let data = "00";
     if (val) {
       data = "01";
@@ -147,9 +141,10 @@ export default function Modal() {
           : services?.characteristics[5]?.characteristic,
         bytes
       );
-      console.log("Wrote `" + bytes + "`");
+      console.log("Power", power);
     } catch (error) {
       console.log(error);
+      setPower(!val);
     }
   };
 
@@ -172,9 +167,9 @@ export default function Modal() {
     setPrevColor(color);
   }, [color, ready]);
 
-  useEffect(() => {
-    sendPower(power);
-  }, [power]);
+  // useEffect(() => {
+  //   sendPower(power);
+  // }, [power]);
 
   const handleDisconnectedPeripheral = (data) => {
     console.log(data);
@@ -195,7 +190,11 @@ export default function Modal() {
       for (const listener of listeners) {
         listener.remove();
       }
-      BleManager.disconnect(peripheral.id);
+      // try {
+      //   BleManager.disconnect(peripheral.id);
+      // } catch (error) {
+      //   console.log(error);
+      // }
     };
   }, []);
 
@@ -225,8 +224,9 @@ export default function Modal() {
           </Text>
           <Switch
             value={power}
-            onChange={(val) => {
-              setPower((previousState) => !previousState);
+            onValueChange={(val) => {
+              setPower(val);
+              sendPower(val);
             }}
             style={{ top: 25, right: 10, position: "absolute" }}
           />
