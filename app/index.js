@@ -33,8 +33,13 @@ const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 const SECONDS_TO_SCAN_FOR = 3;
-const SERVICE_UUIDS = ["0000004a-0000-1000-8000-00805f9b34fb"];
+const SERVICE_UUIDS = ["b8bcb500-7296-4f1d-9a0e-25c2b7d5878a"];
 const ALLOW_DUPLICATES = false;
+
+const POWER_INDEX = Platform.OS === "ios" ? 2 : 22;
+const RED_INDEX = Platform.OS === "ios" ? 3 : 23;
+const GREEN_INDEX = Platform.OS === "ios" ? 4 : 24;
+const BLUE_INDEX = Platform.OS === "ios" ? 5 : 25;
 
 var timeout;
 
@@ -158,28 +163,35 @@ const App = () => {
     };
 
     const handleDiscoverPeripheral = (peripheral) => {
-      console.log(
-        "Got ble peripheral",
-        peripheral.advertising.manufacturerData.bytes
-      );
-      if (!peripheral.name) {
-        peripheral.name = "NO NAME";
-      }
-      if (peripheral.advertising?.manufacturerData?.bytes[0] === 0) {
-        peripheral.power = false;
-      } else {
-        peripheral.power = true;
-      }
-      let red = peripheral.advertising?.manufacturerData?.bytes[1];
-      let green = peripheral.advertising?.manufacturerData?.bytes[2];
-      let blue = peripheral.advertising?.manufacturerData?.bytes[3];
-      let color =
-        "#" +
-        red.toString(16).padStart(2, "0") +
-        green.toString(16).padStart(2, "0") +
-        blue.toString(16).padStart(2, "0");
-      peripheral.color = color;
-      updatePeripherals(peripheral.id, peripheral);
+      try {
+        console.log(
+          "Got ble peripheral",
+          peripheral.name,
+          peripheral,
+          peripheral.advertising.manufacturerData.bytes
+        );
+        if (!peripheral.name) {
+          peripheral.name = "NO NAME";
+        }
+        if (
+          peripheral.advertising?.manufacturerData?.bytes[POWER_INDEX] === 0
+        ) {
+          peripheral.power = false;
+        } else {
+          peripheral.power = true;
+        }
+        let red = peripheral.advertising?.manufacturerData?.bytes[RED_INDEX];
+        let green =
+          peripheral.advertising?.manufacturerData?.bytes[GREEN_INDEX];
+        let blue = peripheral.advertising?.manufacturerData?.bytes[BLUE_INDEX];
+        let color =
+          "#" +
+          red.toString(16).padStart(2, "0") +
+          green.toString(16).padStart(2, "0") +
+          blue.toString(16).padStart(2, "0");
+        peripheral.color = color;
+        updatePeripherals(peripheral.id, peripheral);
+      } catch (error) {}
     };
 
     const togglePower = async (peripheral, power) => {
@@ -373,6 +385,12 @@ const App = () => {
                     <Switch
                       value={item.power}
                       onValueChange={(val) => togglePower(item, val)}
+                      style={{
+                        alignSelf: "flex-start",
+                        transform: [
+                          { scale: Platform.OS === "android" ? 1.5 : 1 },
+                        ],
+                      }}
                     />
                   )}
                 </View>

@@ -152,7 +152,7 @@ export default function Modal() {
     if (!ready) {
       setTimeout(() => {
         setReady(true);
-      }, 20);
+      }, 100);
     }
   }, [ready]);
 
@@ -162,14 +162,10 @@ export default function Modal() {
     }
     if (ready) {
       sendColor(color);
+      setPrevColor(color);
       setReady(false);
     }
-    setPrevColor(color);
   }, [color, ready]);
-
-  // useEffect(() => {
-  //   sendPower(power);
-  // }, [power]);
 
   const handleDisconnectedPeripheral = (data) => {
     console.log(data);
