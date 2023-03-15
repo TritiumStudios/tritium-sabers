@@ -1,15 +1,19 @@
 {
   "expo": {
-    "scheme": "light-companion",
-    "plugins": [
-      "./ble-manager-plugin"
-    ],
-    "name": "Light Companion",
-    "slug": "light-companion",
+    "scheme": "tritiumsabers",
+    "plugins": ["./ble-manager-plugin"],
+    "name": "Tritium Sabers",
+    "slug": "tritiumsabers",
     "version": "0.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "owner": "tritiumstudios",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "icon": "./assets/images/icon.png",
     "android": {
       "permissions": [
         "BLUETOOTH",
@@ -20,18 +24,26 @@
         "BLUETOOTH_SCAN",
         "BLUETOOTH_ADVERTISE"
       ],
-      "package": "com.tritiumstudios.lightcompanion"
+      "package": "com.tritiumstudios.tritiumsabers",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "web": {
       "bundler": "metro"
     },
     "extra": {
       "eas": {
-        "projectId": "b9eb6294-6776-4347-aa73-822c941c18fd"
+        "projectId": "bb06b34c-fcaa-4adc-857f-30e63c231137"
       }
     },
     "ios": {
-      "bundleIdentifier": "com.tritiumstudios.lightcompanion"
+      "bundleIdentifier": "com.tritiumstudios.tritiumsabers",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Allow $(PRODUCT_NAME) to use Bluetooth"
+      }
     }
   }
 }
+

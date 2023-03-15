@@ -17,17 +17,20 @@ import {
   Switch,
   Linking,
   AppState,
+  Dimensions,
+  Image,
 } from "react-native";
 import { Link, usePathname } from "expo-router";
 import { RefreshControl } from "react-native-gesture-handler";
 
 import * as SplashScreen from "expo-splash-screen";
-import { useFonts, Comfortaa_500Medium } from "@expo-google-fonts/comfortaa";
 
 import BleManager from "react-native-ble-manager";
 
 import { bytesToHex, hexToBytes } from "./ble";
 import { AsyncAlertWithCancel } from "./util";
+
+const { height, width } = Dimensions.get("screen");
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -46,15 +49,9 @@ var timeout;
 SplashScreen.preventAutoHideAsync();
 
 const App = () => {
-  const [fontsLoaded] = useFonts({
-    Comfortaa_500Medium,
-  });
-
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
+    SplashScreen.hideAsync();
+  }, []);
 
   if (Platform.OS !== "web") {
     const appState = useRef(AppState.currentState);
@@ -374,8 +371,8 @@ const App = () => {
                   />
                 </View>
                 <View style={{ flex: 4 }}>
-                  <Text style={styles.peripheralName}>{item.name}</Text>
-                  <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
+                  <Text style={styles.peripheralName}>Tritium Saber Stand</Text>
+                  {/* <Text style={styles.rssi}>RSSI: {item.rssi}</Text> */}
                   <Text style={styles.peripheralId}>{item.id}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -405,6 +402,20 @@ const App = () => {
       <>
         <StatusBar />
         <SafeAreaView style={styles.body}>
+          <View
+            style={{
+              margin: 10,
+              height: 70,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Image
+              style={{ width: width * 0.8, resizeMode: "contain" }}
+              source={require("../assets/images/black-logo.png")}
+            />
+          </View>
+
           {bleState == "on" ? (
             <>
               <Pressable
@@ -495,6 +506,16 @@ const App = () => {
               </TouchableOpacity>
             </View>
           )}
+          <Pressable
+            style={{
+              alignItems: "center",
+            }}
+            onPress={() =>
+              Linking.openURL("https://tritium-studios.canny.io/tritium-sabers")
+            }
+          >
+            <Text style={styles.textLink}>Feedback</Text>
+          </Pressable>
         </SafeAreaView>
       </>
     );
@@ -538,7 +559,6 @@ const styles = StyleSheet.create({
     ...boxShadow,
   },
   scanButtonText: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 20,
     letterSpacing: 0.25,
     color: "#fff",
@@ -552,7 +572,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     color: "#000",
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 12,
     fontWeight: "600",
     padding: 4,
@@ -560,19 +579,16 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   peripheralName: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 16,
     textAlign: "center",
     padding: 10,
   },
   rssi: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 12,
     textAlign: "center",
     padding: 2,
   },
   peripheralId: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 8,
     textAlign: "center",
     padding: 2,
@@ -591,14 +607,16 @@ const styles = StyleSheet.create({
     color: "#777",
   },
   textLight: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 16,
     color: "#fff",
   },
   textDark: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 16,
     color: "#000",
+  },
+  textLink: {
+    fontSize: 12,
+    color: "blue",
   },
   blueBtn: {
     backgroundColor: "blue",

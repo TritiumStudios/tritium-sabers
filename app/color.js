@@ -271,12 +271,10 @@ const styles = StyleSheet.create({
     padding: 25,
   },
   textLight: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 16,
     color: "#fff",
   },
   textDark: {
-    // fontFamily: "Comfortaa_500Medium",
     fontSize: 16,
     color: "#000",
   },
