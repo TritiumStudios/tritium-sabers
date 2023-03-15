@@ -1,7 +1,8 @@
 {
   "cli": {
     "version": ">= 3.6.0",
-    "promptToConfigurePushNotifications": false
+    "promptToConfigurePushNotifications": false,
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -20,10 +21,12 @@
     "production": {
       "ios": {
         "resourceClass": "m1-medium"
-      }
+      },
+      "autoIncrement": true
     }
   },
   "submit": {
     "production": {}
   }
 }
+
