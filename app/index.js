@@ -405,6 +405,7 @@ const App = () => {
           <View
             style={{
               margin: 10,
+              marginTop: 50,
               height: 70,
               justifyContent: "center",
               alignItems: "center",
