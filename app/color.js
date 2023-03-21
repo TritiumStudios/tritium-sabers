@@ -9,6 +9,9 @@ import {
   StyleSheet,
   Switch,
   Alert,
+  TextInput,
+  Pressable,
+  Keyboard,
 } from "react-native";
 import { useNavigation, useSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -26,7 +29,7 @@ let services = null;
 
 var timeout;
 
-export default function Modal() {
+export default function Color() {
   const navigation = useNavigation();
   const params = useSearchParams();
 
@@ -46,6 +49,12 @@ export default function Modal() {
   const [power, setPower] = useState(peripheral.power);
 
   const [bleError, setBleError] = useState(null);
+
+  const [inputColor, setInputColor] = useState(peripheral.color);
+
+  useEffect(() => {
+    setInputColor(color);
+  }, [color]);
 
   useEffect(() => {
     connectPeripheral(peripheral);
@@ -194,8 +203,17 @@ export default function Modal() {
     };
   }, []);
 
+  const onChangeInput = (newColor) => {
+    console.log(newColor);
+    var RegExp = /(^#[0-9A-F]{6}$)/i;
+    if (RegExp.test(newColor)) {
+      setColor(newColor);
+    }
+    setInputColor(newColor);
+  };
+
   return (
-    <View style={styles.body}>
+    <Pressable style={styles.body} onPress={() => Keyboard.dismiss()}>
       {connected ? (
         <View>
           {Platform.OS === "web" ? (
@@ -210,6 +228,32 @@ export default function Modal() {
               row={false}
             />
           )}
+          <Text
+            style={[
+              styles.textDark,
+              { top: 30, left: 10, position: "absolute" },
+            ]}
+          >
+            Color
+          </Text>
+          <TextInput
+            style={[
+              styles.textDark,
+              {
+                top: 25,
+                left: 60,
+                position: "absolute",
+                backgroundColor: "#ffffff",
+                paddingVertical: 5,
+                paddingHorizontal: 20,
+                borderRadius: 5,
+                borderWidth: 1,
+                borderColor: "#0003",
+              },
+            ]}
+            value={inputColor}
+            onChangeText={onChangeInput}
+          ></TextInput>
           <Text
             style={[
               styles.textDark,
@@ -248,7 +292,7 @@ export default function Modal() {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 }
 

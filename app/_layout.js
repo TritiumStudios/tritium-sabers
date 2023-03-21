@@ -15,6 +15,13 @@ export default function Layout() {
           headerTitle: "Set Color",
         }}
       />
+      <Stack.Screen
+        name="info"
+        options={{
+          headerTitle: "Info",
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 }

@@ -58,7 +58,7 @@ const App = () => {
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
     const [isScanning, setIsScanning] = useState(false);
-    const [peripherals, setPeripherals] = useState(new Map());
+    const [peripherals, setPeripherals] = useState([]);
 
     const [bleState, setBleState] = useState("on");
 
@@ -71,8 +71,22 @@ const App = () => {
       }
     }, [appStateVisible]);
 
-    const updatePeripherals = (key, value) => {
-      setPeripherals(new Map(peripherals.set(key, value)));
+    const updatePeripheral = (peripheral) => {
+      const newPeripherals = peripherals.map((val) => {
+        if (val.id === peripheral.id) {
+          return peripheral;
+        } else {
+          return val;
+        }
+      });
+      setPeripherals(newPeripherals);
+    };
+
+    const addPerpherial = (peripheral) => {
+      if (peripherals.findIndex((item) => item.id === peripheral.id) !== -1) {
+        return;
+      }
+      setPeripherals((prevPeripherals) => [...prevPeripherals, peripheral]);
     };
 
     const startTimeout = () => {
@@ -90,7 +104,7 @@ const App = () => {
       setIsScanning(true);
       startTimeout();
       disconnectPeripherals();
-      setPeripherals(new Map());
+      setPeripherals([]);
       if (!isScanning) {
         try {
           console.log("Scanning...");
@@ -116,11 +130,6 @@ const App = () => {
     };
 
     const handleDisconnectedPeripheral = (data) => {
-      let peripheral = peripherals.get(data.peripheral);
-      if (peripheral) {
-        peripheral.connected = false;
-        updatePeripherals(peripheral.id, peripheral);
-      }
       console.log("Disconnected from " + data.peripheral);
     };
 
@@ -187,13 +196,13 @@ const App = () => {
           green.toString(16).padStart(2, "0") +
           blue.toString(16).padStart(2, "0");
         peripheral.color = color;
-        updatePeripherals(peripheral.id, peripheral);
+        addPerpherial(peripheral);
       } catch (error) {}
     };
 
     const togglePower = async (peripheral, power) => {
       peripheral.updating = true;
-      updatePeripherals(peripheral.id, peripheral);
+      updatePeripheral(peripheral);
 
       await connectPeripheral(peripheral);
       let services = await BleManager.retrieveServices(peripheral.id);
@@ -226,7 +235,7 @@ const App = () => {
       }
 
       peripheral.updating = false;
-      updatePeripherals(peripheral.id, peripheral);
+      updatePeripheral(peripheral);
 
       BleManager.disconnect(peripheral.id);
     };
@@ -236,14 +245,14 @@ const App = () => {
         if (peripheral) {
           markPeripheral({ connecting: true });
           await BleManager.connect(peripheral.id);
-          markPeripheral({ connecting: false, connected: true });
+          markPeripheral({ connecting: false });
           await BleManager.retrieveServices(peripheral.id);
         }
       } catch (error) {
         console.log("Connection error", error);
       }
       function markPeripheral(props) {
-        updatePeripherals(peripheral.id, { ...peripheral, ...props });
+        updatePeripheral({ ...peripheral, ...props });
       }
     };
 
@@ -315,7 +324,7 @@ const App = () => {
           startScan();
         }, 100);
       } else {
-        setPeripherals(new Map());
+        setPeripherals([]);
         stopScan();
       }
     }, [pathname]);
@@ -367,6 +376,7 @@ const App = () => {
                       height: 30,
                       width: 30,
                       borderRadius: 5,
+                      borderWidth: 1,
                     }}
                   />
                 </View>
@@ -429,13 +439,13 @@ const App = () => {
                 </Text>
               </Pressable>
 
-              {!isScanning && Array.from(peripherals.values()).length == 0 && (
+              {!isScanning && peripherals.length == 0 && (
                 <View style={styles.row}>
                   <Text style={styles.noPeripherals}>No devices found</Text>
                 </View>
               )}
               <FlatList
-                data={Array.from(peripherals.values())}
+                data={peripherals}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 refreshControl={
@@ -507,7 +517,7 @@ const App = () => {
               </TouchableOpacity>
             </View>
           )}
-          <Pressable
+          {/* <Pressable
             style={{
               alignItems: "center",
             }}
@@ -516,7 +526,29 @@ const App = () => {
             }
           >
             <Text style={styles.textLink}>Feedback</Text>
-          </Pressable>
+          </Pressable> */}
+          <Link
+            href={{
+              pathname: "/info",
+            }}
+            asChild
+          >
+            <Pressable
+              style={{
+                bottom: 20,
+                right: 20,
+                position: "absolute",
+                borderRadius: 50,
+                borderWidth: 1,
+                height: 30,
+                width: 30,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={[styles.textDark]}>?</Text>
+            </Pressable>
+          </Link>
         </SafeAreaView>
       </>
     );
