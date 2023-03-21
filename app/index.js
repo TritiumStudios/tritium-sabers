@@ -197,7 +197,9 @@ const App = () => {
           blue.toString(16).padStart(2, "0");
         peripheral.color = color;
         addPerpherial(peripheral);
-      } catch (error) {}
+      } catch (error) {
+        console.log(error);
+      }
     };
 
     const togglePower = async (peripheral, power) => {
@@ -517,16 +519,6 @@ const App = () => {
               </TouchableOpacity>
             </View>
           )}
-          {/* <Pressable
-            style={{
-              alignItems: "center",
-            }}
-            onPress={() =>
-              Linking.openURL("https://tritium-studios.canny.io/tritium-sabers")
-            }
-          >
-            <Text style={styles.textLink}>Feedback</Text>
-          </Pressable> */}
           <Link
             href={{
               pathname: "/info",
@@ -662,3 +654,4 @@ const styles = StyleSheet.create({
 });
 
 export default App;
+
