@@ -6,20 +6,13 @@ import {
   Keyboard,
   Platform,
 } from "react-native";
-import { Link, useNavigation } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { openBrowserAsync } from "expo-web-browser";
+import { nativeApplicationVersion } from "expo-application";
 
 export default function Info() {
-  const navigation = useNavigation();
-  const isPresented = navigation.canGoBack();
-
   return (
     <View style={styles.body} onPress={() => Keyboard.dismiss()}>
-      {!isPresented && (
-        <Link href="../" style={[styles.textLink]}>
-          Dismiss
-        </Link>
-      )}
       <View
         style={{
           flex: 1,
@@ -28,12 +21,17 @@ export default function Info() {
           paddingVertical: 200,
         }}
       >
+        <Text style={styles.textDark}>{"Thanks for using our app! 🙌"}</Text>
         <TouchableOpacity
-          style={[styles.tryAgainBtn]}
+          style={[styles.tryAgainBtn, { backgroundColor: "blue" }]}
+          onPress={() => openBrowserAsync("https://tritiumsabers.com/")}
+        >
+          <Text style={styles.textLight}>Tritium Sabers Store</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tryAgainBtn, { backgroundColor: "indigo" }]}
           onPress={() =>
-            WebBrowser.openBrowserAsync(
-              "https://github.com/TritiumStudios/tritium-sabers"
-            )
+            openBrowserAsync("https://github.com/TritiumStudios/tritium-sabers")
           }
         >
           <Text style={styles.textLight}>Source Code</Text>
@@ -41,14 +39,12 @@ export default function Info() {
         <TouchableOpacity
           style={[styles.tryAgainBtn, { backgroundColor: "purple" }]}
           onPress={() =>
-            WebBrowser.openBrowserAsync(
-              "https://tritium-studios.canny.io/tritium-sabers"
-            )
+            openBrowserAsync("https://tritium-studios.canny.io/tritium-sabers")
           }
         >
           <Text style={styles.textLight}>Have Feedback?</Text>
         </TouchableOpacity>
-        <Text style={styles.textDark}>{`v`}</Text>
+        <Text style={styles.textDark}>{`v${nativeApplicationVersion}`}</Text>
       </View>
       {Platform.OS === "ios" && <StatusBar style="light" />}
     </View>
