@@ -48,6 +48,8 @@ var timeout;
 
 SplashScreen.preventAutoHideAsync();
 
+var knownPeripherials = [];
+
 const App = () => {
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -105,6 +107,7 @@ const App = () => {
       startTimeout();
       disconnectPeripherals();
       setPeripherals([]);
+      knownPeripherials = [];
       if (!isScanning) {
         try {
           console.log("Scanning...");
@@ -176,6 +179,10 @@ const App = () => {
           peripheral,
           peripheral.advertising.manufacturerData.bytes
         );
+        if (knownPeripherials.includes(peripheral.id)) {
+          // avoid duplicates on Android scan
+          return;
+        }
         if (!peripheral.name) {
           peripheral.name = "NO NAME";
         }
@@ -196,6 +203,7 @@ const App = () => {
           green.toString(16).padStart(2, "0") +
           blue.toString(16).padStart(2, "0");
         peripheral.color = color;
+        knownPeripherials = [...knownPeripherials, peripheral.id];
         addPerpherial(peripheral);
       } catch (error) {}
     };
@@ -544,6 +552,7 @@ const App = () => {
                 width: 30,
                 alignItems: "center",
                 justifyContent: "center",
+                backgroundColor: "#ffffff",
               }}
             >
               <Text style={[styles.textDark]}>?</Text>
