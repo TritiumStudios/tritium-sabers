@@ -10,7 +10,7 @@
     "expo": "^48.0.0",
     "expo-application": "~5.1.1",
     "expo-constants": "~14.2.1",
-    "expo-dev-client": "~2.1.5",
+    "expo-dev-client": "~2.1.6",
     "expo-font": "~11.1.1",
     "expo-image": "~1.0.0",
     "expo-linking": "~4.0.1",
@@ -21,7 +21,7 @@
     "react": "18.2.0",
     "react-colorful": "^5.6.1",
     "react-dom": "18.2.0",
-    "react-native": "0.71.3",
+    "react-native": "0.71.4",
     "react-native-ble-manager": "^8.8.0",
     "react-native-gesture-handler": "~2.9.0",
     "react-native-reanimated": "~2.14.4",
@@ -44,6 +44,7 @@
     "metro-resolver": "^0.73.7"
   },
   "name": "tritiumsabers",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true
 }
+
