@@ -12,4 +12,5 @@ Connect to a Tritium Saber Stand over BLE and customize the accent color!
   <video src="https://user-images.githubusercontent.com/43047974/226649626-90fbbac1-3171-4ecb-a2ea-69f73cda955d.mov" width=400/>
 <div/>
 
+Hardware/Firmware Repo: https://github.com/TritiumStudios/TS-1001
 
