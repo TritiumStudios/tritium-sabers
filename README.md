@@ -1,8 +1,8 @@
-# tritium-sabers
+# Tritium Sabers
 
 Source code for the Tritium Sabers app available on Apple App Store and Google Play.
 
-[Hardware/Firmware Repo](https://github.com/TritiumStudios/TS-1001)
+[Firmware Repo](https://github.com/TritiumStudios/TS-1001)
 
 https://apps.apple.com/us/app/tritium-sabers/id6446357478
 
