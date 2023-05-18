@@ -138,7 +138,11 @@ const App = () => {
 
     const handleBleManagerDidUpdateState = async (data) => {
       setBleState(data?.state);
-      if (data?.state != "on") {
+      if (
+        data?.state != "on" &&
+        data?.state != "turning_on" &&
+        data?.state != "turning_off"
+      ) {
         if (data?.state === "unauthorized") {
           let res = await AsyncAlertWithCancel(
             "Bluetooth Unauthorized",
@@ -173,12 +177,12 @@ const App = () => {
 
     const handleDiscoverPeripheral = (peripheral) => {
       try {
-        console.log(
-          "Got ble peripheral",
-          peripheral.name,
-          peripheral,
-          peripheral.advertising.manufacturerData.bytes
-        );
+        // console.log(
+        //   "Got ble peripheral",
+        //   peripheral.name,
+        //   peripheral,
+        //   peripheral.advertising.manufacturerData.bytes
+        // );
         if (knownPeripherials.includes(peripheral.id)) {
           // avoid duplicates on Android scan
           return;
@@ -303,8 +307,6 @@ const App = () => {
         ),
       ];
 
-      handleAndroidPermissionCheck();
-
       return () => {
         console.log("unmount");
         for (const listener of listeners) {
@@ -338,28 +340,6 @@ const App = () => {
         stopScan();
       }
     }, [pathname]);
-
-    const handleAndroidPermissionCheck = () => {
-      if (Platform.OS === "android" && Platform.Version >= 23) {
-        PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        ).then((result) => {
-          if (result) {
-            console.log("Permission is OK");
-          } else {
-            PermissionsAndroid.request(
-              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-            ).then((result) => {
-              if (result) {
-                console.log("User accept");
-              } else {
-                console.log("User refuse");
-              }
-            });
-          }
-        });
-      }
-    };
 
     const renderItem = ({ item }) => {
       return (
@@ -663,4 +643,3 @@ const styles = StyleSheet.create({
 });
 
 export default App;
-
