@@ -62,7 +62,9 @@ const App = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [peripherals, setPeripherals] = useState([]);
 
-    const [bleState, setBleState] = useState("on");
+    const [listeners, setListeners] = useState([]);
+
+    const [bleState, setBleState] = useState("loading");
 
     const pathname = usePathname();
 
@@ -71,7 +73,7 @@ const App = () => {
       if (appStateVisible === "active") {
         startScan();
       }
-    }, [appStateVisible]);
+    }, [appStateVisible, bleState]);
 
     const updatePeripheral = (peripheral) => {
       const newPeripherals = peripherals.map((val) => {
@@ -285,33 +287,51 @@ const App = () => {
       }
     }
 
+    const startup = async () => {
+      const res = await handleAndroidPermissionCheck();
+      if (res) {
+        BleManager.start({ showAlert: false });
+        setListeners([
+          bleManagerEmitter.addListener(
+            "BleManagerDiscoverPeripheral",
+            handleDiscoverPeripheral
+          ),
+          bleManagerEmitter.addListener("BleManagerStopScan", handleStopScan),
+          bleManagerEmitter.addListener(
+            "BleManagerDisconnectPeripheral",
+            handleDisconnectedPeripheral
+          ),
+          bleManagerEmitter.addListener(
+            "BleManagerDidUpdateState",
+            handleBleManagerDidUpdateState
+          ),
+        ]);
+        setBleState("on");
+        return true;
+      } else {
+        setBleState("unauthorized");
+        return false;
+      }
+    };
+
     useEffect(() => {
-      BleManager.start({ showAlert: false });
-      const listeners = [
-        bleManagerEmitter.addListener(
-          "BleManagerDiscoverPeripheral",
-          handleDiscoverPeripheral
-        ),
-        bleManagerEmitter.addListener("BleManagerStopScan", handleStopScan),
-        bleManagerEmitter.addListener(
-          "BleManagerDisconnectPeripheral",
-          handleDisconnectedPeripheral
-        ),
-        bleManagerEmitter.addListener(
-          "BleManagerDidUpdateState",
-          handleBleManagerDidUpdateState
-        ),
-      ];
+      startup();
+    }, []);
 
-      handleAndroidPermissionCheck();
+    useEffect(() => {
+      console.log(bleState);
+    }, [bleState]);
 
+    useEffect(() => {
       return () => {
         console.log("unmount");
-        for (const listener of listeners) {
-          listener.remove();
+        if (listeners) {
+          for (const listener of listeners) {
+            listener.remove();
+          }
         }
       };
-    }, []);
+    }, [listeners]);
 
     useEffect(() => {
       const subscription = AppState.addEventListener(
@@ -339,25 +359,64 @@ const App = () => {
       }
     }, [pathname]);
 
-    const handleAndroidPermissionCheck = () => {
-      if (Platform.OS === "android" && Platform.Version >= 23) {
-        PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        ).then((result) => {
-          if (result) {
-            console.log("Permission is OK");
-          } else {
-            PermissionsAndroid.request(
+    const handleAndroidPermissionCheck = async () => {
+      try {
+        if (Platform.OS === "android" && Platform.Version >= 23) {
+          let check = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          );
+          if (!check) {
+            const request = await PermissionsAndroid.request(
               PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-            ).then((result) => {
-              if (result) {
-                console.log("User accept");
-              } else {
-                console.log("User refuse");
-              }
-            });
+            );
+            if (!request) {
+              return false;
+            }
           }
-        });
+
+          check = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+          );
+          if (!check) {
+            const request = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+            );
+            if (!request) {
+              return false;
+            }
+          }
+
+          check = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
+          );
+          if (!check) {
+            const request = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
+            );
+            if (!request) {
+              return false;
+            }
+          }
+
+          check = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE
+          );
+          if (!check) {
+            const request = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE
+            );
+            if (!request) {
+              return false;
+            }
+          }
+
+          return true;
+        } else {
+          return true;
+        }
+      } catch (error) {
+        console.log(error);
+        return true;
       }
     };
 
@@ -506,6 +565,16 @@ const App = () => {
               >
                 <Text style={styles.textLight}>Go to settings</Text>
               </TouchableOpacity>
+            </View>
+          ) : bleState === "loading" ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <ActivityIndicator size={"large"} />
             </View>
           ) : (
             <View
@@ -663,4 +732,3 @@ const styles = StyleSheet.create({
 });
 
 export default App;
-
