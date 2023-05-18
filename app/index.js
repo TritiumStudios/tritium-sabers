@@ -307,6 +307,8 @@ const App = () => {
         ),
       ];
 
+      BleManager.checkState();
+
       return () => {
         console.log("unmount");
         for (const listener of listeners) {
