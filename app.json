@@ -4,7 +4,7 @@
     "plugins": ["./ble-manager-plugin"],
     "name": "Tritium Sabers",
     "slug": "tritiumsabers",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "owner": "tritiumstudios",
