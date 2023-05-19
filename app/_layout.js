@@ -19,14 +19,17 @@ export default function Layout() {
       const result = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       ]);
-      if (result?.["android.permission.BLUETOOTH_SCAN"] !== "granted") {
+      if (
+        result?.["android.permission.BLUETOOTH_SCAN"] !== "granted" ||
+        result?.["android.permission.BLUETOOTH_CONNECT"] !== "granted" ||
+        result?.["android.permission.ACCESS_FINE_LOCATION"] !== "granted"
+      ) {
         setStatus("failed");
+      } else {
+        setStatus("ready");
       }
-      if (result?.["android.permission.BLUETOOTH_CONNECT"] !== "granted") {
-        setStatus("failed");
-      }
-      setStatus("ready");
     } else if (Platform.OS === "android" && Platform.Version >= 23) {
       const checkResult = await PermissionsAndroid.check(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
@@ -59,7 +62,10 @@ export default function Layout() {
           justifyContent: "center",
         }}
       >
-        <Text style={{ marginBottom: 10 }}>Bluetooth Permissions Failed</Text>
+        <Text style={{ marginBottom: 10 }}>Required Permissions Denied</Text>
+        <Text style={{ marginBottom: 10 }}>
+          Please allow Bluetooth and Location Services for this app
+        </Text>
         <TouchableOpacity
           style={styles.blueBtn}
           onPress={() => Linking.openSettings()}
