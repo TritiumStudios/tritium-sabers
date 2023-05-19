@@ -1,17 +1,20 @@
 node_modules/
 .expo/
 dist/
-npm-debug.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
+npm-debug.\*
+_.jks
+_.p8
+_.p12
+_.key
+_.mobileprovision
+_.orig.\*
 web-build/
 
 # macOS
+
 .DS_Store
 
 /android
 /ios
+
+/builds
