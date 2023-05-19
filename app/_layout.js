@@ -50,7 +50,9 @@ export default function Layout() {
   };
 
   useEffect(() => {
-    handleAndroidPermissions();
+    if (Platform.OS === "android") {
+      handleAndroidPermissions();
+    }
   }, []);
 
   if (status === "failed") {

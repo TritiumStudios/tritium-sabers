@@ -29,6 +29,11 @@ import BleManager from "react-native-ble-manager";
 
 import { bytesToHex, hexToBytes } from "./ble";
 import { AsyncAlertWithCancel } from "./util";
+import {
+  getForegroundPermissionsAsync,
+  hasServicesEnabledAsync,
+  requestForegroundPermissionsAsync,
+} from "expo-location";
 
 const { height, width } = Dimensions.get("screen");
 
@@ -63,6 +68,7 @@ const App = () => {
     const [peripherals, setPeripherals] = useState([]);
 
     const [bleState, setBleState] = useState("on");
+    const [locationState, setLocationState] = useState(true);
 
     const pathname = usePathname();
 
@@ -70,6 +76,14 @@ const App = () => {
       disconnectPeripherals();
       if (appStateVisible === "active") {
         startScan();
+      }
+    }, [appStateVisible]);
+
+    useEffect(() => {
+      if (appStateVisible === "active") {
+        if (Platform.OS === "android") {
+          getLocationState();
+        }
       }
     }, [appStateVisible]);
 
@@ -289,6 +303,19 @@ const App = () => {
       }
     }
 
+    const getLocationState = async () => {
+      const per = await getForegroundPermissionsAsync();
+      if (!per.granted) {
+        const res = await requestForegroundPermissionsAsync();
+        if (!res.granted) {
+          setLocationState(null);
+          return;
+        }
+      }
+      const status = await hasServicesEnabledAsync();
+      setLocationState(status);
+    };
+
     useEffect(() => {
       BleManager.start({ showAlert: false });
       const listeners = [
@@ -308,6 +335,10 @@ const App = () => {
       ];
 
       BleManager.checkState();
+
+      if (Platform.OS === "android") {
+        getLocationState();
+      }
 
       return () => {
         console.log("unmount");
@@ -336,7 +367,7 @@ const App = () => {
         setIsScanning(true);
         setTimeout(() => {
           startScan();
-        }, 100);
+        }, 300);
       } else {
         setPeripherals([]);
         stopScan();
@@ -419,7 +450,7 @@ const App = () => {
             />
           </View>
 
-          {bleState == "on" ? (
+          {bleState === "on" && locationState === true ? (
             <>
               <Pressable
                 style={styles.scanButton}
@@ -434,6 +465,11 @@ const App = () => {
               {!isScanning && peripherals.length == 0 && (
                 <View style={styles.row}>
                   <Text style={styles.noPeripherals}>No devices found</Text>
+                  {Platform.OS === "android" && (
+                    <Text style={styles.noPeripherals}>
+                      Make sure that Bluetooth and Location Services are enabled
+                    </Text>
+                  )}
                 </View>
               )}
               <FlatList
@@ -473,6 +509,28 @@ const App = () => {
                 <Text style={styles.textLight}>Go to settings</Text>
               </TouchableOpacity>
             </View>
+          ) : locationState === false ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={styles.textDark}>Location Services Disabled</Text>
+              <TouchableOpacity
+                style={styles.blueBtn}
+                onPress={() =>
+                  Platform.OS === "ios"
+                    ? Linking.openURL("App-Prefs:Privacy&path=LOCATION")
+                    : Linking.sendIntent(
+                        "android.settings.LOCATION_SOURCE_SETTINGS"
+                      )
+                }
+              >
+                <Text style={styles.textLight}>Go to settings</Text>
+              </TouchableOpacity>
+            </View>
           ) : bleState === "unauthorized" ? (
             <View
               style={{
@@ -482,6 +540,24 @@ const App = () => {
               }}
             >
               <Text style={styles.textDark}>Bluetooth Unauthorized</Text>
+              <TouchableOpacity
+                style={styles.blueBtn}
+                onPress={() => Linking.openSettings()}
+              >
+                <Text style={styles.textLight}>Go to settings</Text>
+              </TouchableOpacity>
+            </View>
+          ) : locationState === null ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={styles.textDark}>
+                Location Services Unauthorized
+              </Text>
               <TouchableOpacity
                 style={styles.blueBtn}
                 onPress={() => Linking.openSettings()}
